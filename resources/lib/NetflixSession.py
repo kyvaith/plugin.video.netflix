@@ -147,7 +147,7 @@ class NetflixSession(object):
         json_str = json_str.replace('\"', '\\"')  # Hook for escape double-quotes
         json_str = json_str.replace('\\s', '\\\\s')  # Hook for escape \s in json regex
         json_str = json_str.decode('unicode_escape')  # finally decoding...
-        self.nx_common.log('Extracted JSON (%s) from page: %s' % (type(json_string).__name__, json_str))
+        self.nx_common.log('Extracted JSON (%s) from page: %s' % (type(json_str).__name__, json_str))
         decoded_json = json.loads(json_str, encoding='utf-8', strict=False)
         self.nx_common.log('Python repr. of extracted json: {}'.format(decoded_json))
         return decoded_json
