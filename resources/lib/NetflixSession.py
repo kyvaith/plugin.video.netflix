@@ -147,7 +147,10 @@ class NetflixSession(object):
         json_str = json_str.replace('\"', '\\"')  # Hook for escape double-quotes
         json_str = json_str.replace('\\s', '\\\\s')  # Hook for escape \s in json regex
         json_str = json_str.decode('unicode_escape')  # finally decoding...
-        return json.loads(json_str, encoding='utf-8', strict=False)
+        self.nx_common.log('Extracted JSON (%s) from page: %s' % (type(json_string).__name__, json_str))
+        decoded_json = json.loads(json_str, encoding='utf-8', strict=False)
+        self.nx_common.log('Python repr. of extracted json: {}'.format(decoded_json))
+        return decoded_json
 
     def extract_inline_netflix_page_data(self, content='', items=None):
         """Extract the essential data from the page contents
@@ -192,6 +195,7 @@ class NetflixSession(object):
             profiles=profiles)
         if is_valid_user_data is not False:
             self.nx_common.log(msg='Parsing inline data parsing successfull')
+            self.nx_common.log(msg='Extracted authURL is {}'.format(user_data['authURL']))
             return (user_data, profiles)
         self.nx_common.log(msg='Parsing inline data failed')
         return (user_data, profiles)
@@ -1832,11 +1836,14 @@ class NetflixSession(object):
             'authURL': self.user_data.get('authURL')
         })
 
+        self.nx_common.log('Updating my list, payload: {}'.format(payload))
+
         response = self._session_post(
             component='update_my_list',
             type='api',
             headers=headers,
             data=payload)
+        self.nx_common.log('Response: {}'.format(response.text))
         return response and response.status_code == 200
 
     def _init_session(self):
