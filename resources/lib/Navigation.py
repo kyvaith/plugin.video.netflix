@@ -146,6 +146,8 @@ class Navigation(object):
                         'profile_id': profile_id})
                     return self.show_video_lists(widget_display)
             return self.show_profiles()
+        elif action == 'video_lists_native':
+            return self.populate_video_lists()
         elif action == 'save_autologin':
             # save profile id and name to settings for autologin
             autologin = self.kodi_helper.save_autologin_data(
@@ -490,7 +492,7 @@ class Navigation(object):
         if user_data:
             user_list = ['queue', 'topTen', 'netflixOriginals', 'continueWatching',
                          'trendingNow', 'newRelease', 'popularTitles']
-            if str(type) in user_list and video_list_id is None:
+            if str(type) in user_list or str(type) == 'billboard' and video_list_id is None:
                 video_list_id = self.list_id_for_type(type)
             for i in range(0, 4):
                 items = self._check_response(self.call_netflix_service({
@@ -557,6 +559,38 @@ class Navigation(object):
                     build_url=self.build_url,
                     widget_display=widget_display)
                 return listing
+        return False
+
+    def populate_video_lists(self):
+        import xbmcgui
+        window = xbmcgui.Window(xbmcgui.getCurrentWindowId())
+        user_data = self._check_response(self.call_netflix_service({
+            'method': 'get_user_data'}))
+        if user_data:
+            video_list_ids = self._check_response(self.call_netflix_service({
+                'method': 'fetch_video_list_ids',
+                'guid': user_data['guid'],
+                'cache': True}))
+            if video_list_ids:
+                list_counter = 510
+                active_widgets = ''
+                for video_list_id in video_list_ids['user']:
+                    if video_list_ids['user'][video_list_id]['name'] == 'billboard':
+                        continue
+                    prop_title = '{}_title'.format(list_counter)
+                    title = video_list_ids['user'][video_list_id]['displayName']
+                    prop_content = '{}_content'.format(list_counter)
+                    content = 'plugin://plugin.video.netflix/?action=video_list&amp;video_list_id={}'.format(video_list_id)
+                    prop_action = '{}_action'.format(list_counter)
+                    self.log('Added video list %s=%s, %s=%s' % (prop_title, title, prop_content, content))
+                    window.setProperty(prop_title, title)
+                    window.setProperty(prop_content, content + '&amp;widget_display=true')
+                    window.setProperty(prop_action, content)
+                    active_widgets += ',' + str(list_counter)
+                    list_counter += 10
+                window.setProperty('netflix_active_widgets', active_widgets)
+                self.log('Added {} video lists: {}'.format((list_counter - 10) / 10 - 50, active_widgets))
+                return True
         return False
 
     @log
